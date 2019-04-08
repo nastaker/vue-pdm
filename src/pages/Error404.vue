@@ -1,0 +1,23 @@
+<template>
+  <el-row type="flex">
+    <el-col :span="24" style="text-align:center">
+    <p>
+      <img
+        src="@/assets/sad.svg"
+        style="width:30vw;max-width:150px;"
+      >
+    </p>
+    <p class="text-faded">Sorry, nothing here...<strong>(404)</strong></p>
+    <el-button
+      style="width:200px;"
+      @click="$router.push('/')"
+    >Go back</el-button>
+    </el-col>
+  </el-row>
+</template>
+
+<script>
+export default {
+  name: 'Error404'
+}
+</script>
