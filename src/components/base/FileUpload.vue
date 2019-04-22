@@ -27,8 +27,11 @@ export default {
     onChange (file, fileList) {
       this.$emit('onChange', file, fileList)
     },
-    uploaded (response, file, fileList) {
-      this.$emit('uploaded', response)
+    uploaded (response) {
+      if (response.msg) {
+        this.$message.error(response.msg);
+      }
+      this.$emit('uploaded', response.obj)
     }
   },
   computed: {

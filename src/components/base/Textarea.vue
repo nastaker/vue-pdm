@@ -5,7 +5,7 @@
       :value="value"
       :disabled="isReadonly=='True'"
       :readonly="isReadonly=='True'"
-      rows="height"
+      :rows="height"
       resize="none"
       @input="$emit('input', $event)">
     </el-input>

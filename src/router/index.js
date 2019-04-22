@@ -17,15 +17,15 @@ export default function ({ store }) {
   })
   
   Router.beforeEach((to, from, next) => {
-    // 未登录时强制跳转回登录页面
-    // if (to.path.indexOf('/login') < 0) {
-    //   if (to.path === '/') {
-    //     next()
-    //   } else if (!store.getters['user/getUser']) {
-    //     next({path: '/login'})
-    //     return
-    //   }
-    // }
+    //未登录时强制跳转回登录页面
+    if (to.path.indexOf('/login') < 0) {
+      if (to.path === '/') {
+        next()
+      } else if (!store.getters['user/getUser']) {
+        next({path: '/login'})
+        return
+      }
+    }
     next()
   })
   return Router

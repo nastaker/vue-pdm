@@ -18,6 +18,11 @@
 export default {
   name: 'Select',
   data: () => ({ }),
-  props: ['fieldname', 'value', 'items', 'isReadonly']
+  props: ['fieldname', 'value', 'items', 'isReadonly'],
+  mounted () {
+    if (this.isReadonly === 'False') {
+      this.$emit('input', this.value)
+    }
+  }
 }
 </script>

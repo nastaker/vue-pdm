@@ -1,5 +1,5 @@
 <template>
-  <el-tabs v-model="activeName"  v-if="!loading">
+  <el-tabs v-model="activeName" v-if="!loading">
     <el-tab-pane
     v-for="(tab, index) in page.tabs"
     :key="tab.guid"
@@ -27,7 +27,8 @@ export default {
     this.load()
   },
   watch: {
-    '$route' (from, to) {
+    '$route' () {
+      this.activeName = "0"
       this.load()
     }
   },

@@ -1,10 +1,10 @@
 <template>
   <div v-if="tab.tableDef.guid">
     <el-row type="flex" justify="space-between" style="margin-bottom: 10px">
-      <el-col>
+      <el-col :span="20">
         <button-group :buttons="tab.menu.children" @clickEvent="clickEvent"/>
       </el-col>
-      <el-col style="text-align:right">
+      <el-col :span="4" style="text-align:right">
         <el-switch v-model="toggleSearch"></el-switch>
       </el-col>
     </el-row>
@@ -43,7 +43,7 @@
         </template>
       </el-row>
       <el-button :class="[{'hide': !toggleSearch}]" @click="clearQuery()" size="small">清空查询</el-button>
-      <el-button :class="[{'hide': !toggleSearch}]" @click="loadData" size="small">查询</el-button>
+      <el-button :class="[{'hide': !toggleSearch}]" @click="refresh" size="small">查询</el-button>
     </div>
     <el-table
       :height="height"
@@ -97,7 +97,7 @@
       </template>
     </el-table>
     <div class="footer">
-      <el-select v-model="pagesize" @change="pagenumber=1;loadData()" size="small" style="width: 130px">
+      <el-select v-model="pagesize" @change="pagenumber=1;refresh()" size="small" style="width: 130px">
         <el-option
           v-for="item in pageSplit"
           :key="item"
@@ -107,7 +107,7 @@
       </el-select>
       <el-pagination
         layout="prev, pager, next"
-        @current-change="loadData"
+        @current-change="refresh"
         :current-page.sync="pagenumber"
         :page-size="pagesize"
         :total="total">
@@ -171,12 +171,10 @@ export default {
     // _this.data = _this.getTableData()
     // _this.loading = false
     // 一旦挂载，需要触发初始服务器数据获取
-    _this.loadData()
+    _this.refresh()
     window.onresize = () => {
-      return (() => {
-        window.fullHeight = document.documentElement.clientHeight
-        _this.height = window.fullHeight - 220
-      })()
+      window.fullHeight = document.documentElement.clientHeight
+      _this.height = window.fullHeight - 220
     }
   },
   watch: {
@@ -196,16 +194,16 @@ export default {
     handleSelectionChange (val) {
       this.selected = val
     },
-    sortChange({column, prop, order}) {
+    sortChange({ prop, order}) {
       let _this = this
       _this.sortBy = prop
       _this.descending = (order === 'ascending') ? 'ASC' : 'DESC'
-      _this.loadData()
+      _this.refresh()
     },
-    getCellClass ({row, column, rowIndex, columnIndex}) {
+    getCellClass () {
       return 'padding: 5px 0'
     },
-    loadData () {
+    refresh () {
       let _this = this
       let order = ''
       _this.data = []
@@ -214,7 +212,7 @@ export default {
         order = _this.sortBy + ' ' + _this.descending
       }
       _this.$http.post('/data', {
-        action: 'refresh',
+        action: _this.action ? _this.action.name : 'refresh',
         GUID: _this.tab.tableDef.guid,
         PAGE: _this.pagenumber,
         PAGECOUNT: _this.pagesize,
@@ -258,6 +256,9 @@ export default {
     getTableData () {
       // 获取
       let rows = this.rawData.rows
+      if (!rows) {
+        return []
+      }
       this.convertRows(rows)
       return rows
     },
@@ -275,11 +276,10 @@ export default {
       let _this = this
       if (action.msg && action.msg.length > 0) {
         _this.$confirm(action.msg)
-          .then(_ => {
+          .then(() => {
             _this.clickEventAction(action, data)
-            done()
           })
-          .catch(_ => {})
+          .catch(() => {})
       } else {
         _this.clickEventAction(action, data)
       }
@@ -289,14 +289,27 @@ export default {
       _this.action = action
       _this.currSelected = data
       let api = '/action'
-      if (action.type === 'browser') {
+      if (action.type === 'downfile') {
         api = '/download'
       } else if (action.type === 'URL') {
         api = '/url'
       } else if (action.type === 'refresh') {
         this.clearQuery()
-        this.loadData()
+        this.refresh()
         return
+      } else if (action.type === 'detail') {
+        // 保存参数
+        _this.$store.commit('user/setParam', {
+          FORMGUID: _this.page.guid,
+          ACTION: action.name,
+          OBJ: data
+        })
+        if (data) {
+          // 打开新页面
+          window.open('#/detail', '_blank')
+        } else {
+          _this.$message.error('未选择数据')
+        }
       }
       _this.$http.post(api, {
         FORMGUID: _this.page.guid,
@@ -306,28 +319,32 @@ export default {
          if (action.isform === 'True') {
           _this.dialogPage = response.data
           _this.showDialog = true
-        } else if (action.type === 'browser') {
-          let url = process.env.API_FILE + '/' + response.data
+        } else if (action.type === 'downfile') {
+          let url = process.env.VUE_APP_API_FILE + '/' + response.data
           window.open(url, '_blank')
-        } else if (action.type === 'detail') {
-          // 保存参数
-          _this.$store.commit('user/setParam', {
-            FORMGUID: _this.page.guid,
-            ACTION: action.name,
-            OBJ: data
-          })
-          // 打开新页面
-          window.open('#/detail', '_blank')
         } else if (action.type === 'URL') {
           let url = response.data
           _this.$store.commit('user/setParam', url)
           window.open('#/view', '_blank')
+        } else {
+          _this.refresh()
         }
       })
     },
     dialogClose (data) {
       let _this = this
       _this.showDialog = false
+      if (_this.action.type === 'delete') {
+        _this.refresh()
+        // let guid = _this.currSelected.guid
+        // for (let i = 0, j = _this.data.length; i < j; i++) {
+        //   let r = _this.data[i]
+        //   if (r.guid === guid) {
+        //     _this.data.splice(i, 1)
+        //     break
+        //   }
+        // }
+      }
       if (!data) {
         return
       }
@@ -337,22 +354,13 @@ export default {
       if (data && typeof data.row === 'object') {
         _this.convertRow(data.row, data.row.rowdata)
         if (_this.action.type === 'add') {
-          _this.data.push(data.row)
+          _this.pagenumber = 1
+          _this.refresh()
+          // _this.data.unshift(data.row)
         } else if (_this.action.type === 'mod') {
-          Object.assign(_this.currSelected, data.row)
-        } else if (_this.action.type === 'delete') {
-          let guid = _this.currSelected.guid
-          for (let i = 0, j = _this.data.length; i < j; i++) {
-            let r = _this.data[i]
-            if (r.guid === guid) {
-              _this.data.splice(i, 1)
-              break
-            }
-          }
+          _this.refresh()
+          // Object.assign(_this.currSelected, data.row)
         }
-      } else if (_this.action.type === 'browser') {
-        let url = process.env.API_FILE + '/' + data
-        window.open(url, '_blank')
       } else if (_this.action.type === 'detail') {
         // 保存参数
         _this.$store.commit('user/setParam', {

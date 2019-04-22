@@ -21,7 +21,8 @@ export default {
       _this.$http.get('/message')
         .then((response) => {
           let result = response.data
-          if (result && result.length > 0) {
+          if (result && result.messages) {
+            result = result.messages
             for (let i = 0, j = result.length; i < j; i++) {
               _this.$notify({
                 title: result[i].title,

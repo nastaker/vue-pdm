@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export default ({ Vue, store, message }) => {
+export default ({ Vue, router, store, message }) => {
   let http = axios.create({
     baseURL: process.env.VUE_APP_API,
     withCredentials: true
@@ -19,6 +19,19 @@ export default ({ Vue, store, message }) => {
   })
   // 添加响应拦截器
   http.interceptors.response.use(function (response) {
+    let result = response.data
+    let errMsg = result.msg
+    if (result.code !== '0' || errMsg) {
+      const err = new Error(errMsg) 
+      err.data = errMsg
+      err.response = response 
+      message({
+        message: errMsg,
+        type: 'error'
+      })
+      return Promise.reject(err)
+    }
+    response.data = result.obj
     return response
   }, function (error) {
     let errMsg = ''
@@ -27,11 +40,11 @@ export default ({ Vue, store, message }) => {
         // 判断有获取到新token，覆盖老token，重新发起上次的请求
         store.commit('user/removeUser')
         errMsg = '登录信息已失效，请重新登录'
-        // router.push('/login')
+        router.push('/login')
       } else if (error.response.data.error) {
         errMsg = error.response.data.error
-      } else if (error.response.data[0]) {
-        errMsg = error.response.data[0]
+      } else if (error.response.data) {
+        errMsg = error.response.data
       } else {
         errMsg = '错误代码：' + error.response.status + '，请联系管理'
       }

@@ -10,9 +10,9 @@
   "dependencies": {
     "axios": "^0.18.0",
     "css-loader": "^2.1.0",
+    "el-cascader-multi": "https://github.com/nastaker/el-cascader-multi/tarball/master",
     "element-ui": "^2.4.5",
     "ionicons": "^4.5.5",
-    "multi-cascader-base-ele": "^1.0.12",
     "node-sass": "^4.11.0",
     "sass-loader": "^7.1.0",
     "vue": "^2.6.6",

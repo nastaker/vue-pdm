@@ -1,13 +1,12 @@
 <template>
   <div class="text-left">
-    <el-multi-cascader
+    <el-cascader-multi
       v-if="isMulti=='True' && loaded"
-      multiple
+      @change="change($event)"
       clearable
-      style="width:100%"
-      @change="change($event)" 
+      :width="100"
       v-model="checkList"
-      :options="items" />
+      :data="items" />
     <el-cascader
       v-if="isMulti=='False' && loaded"
       clearable
@@ -27,14 +26,15 @@ export default {
     loaded: false
   }),
   mounted () {
-    if (this.value) {
+    this.checkList = []
+    if (this.value && typeof this.value === 'string') {
       let list = []
-      if (this.isMulti === 'False') {
+      if (this.value.indexOf(';') < 0) {
         this.checkList = this.value.split(',')
       } else {
         list = this.value.split(';')
         for (let i = 0, j = list.length; i < j; i++) {
-          this.checkList.push(list[i].split(','))
+          this.checkList.push(list[i].split(',')[0])
         }
       }
     }
@@ -42,7 +42,7 @@ export default {
     this.loaded = true
   },
   methods: {
-    change (item) {
+    change () {
       this.$emit('input', this.checkList)
     }
   }

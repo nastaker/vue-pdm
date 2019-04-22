@@ -24,8 +24,6 @@
 </template>
 
 <script>
-let fileNameKey = 'CN_NAME'
-
 import BUTTON from '../base/Button'
 import LABEL from '../base/Label.vue'
 import TEXTBOX from '../base/Textbox.vue'
@@ -36,6 +34,7 @@ import CASCADER from '../base/Cascader.vue'
 import CHECKBOX from '../base/Checkbox.vue'
 import FILE from '../base/FileUpload.vue'
 import NUMBER from '../base/Number.vue'
+import IMG from '../base/ImageUpload.vue'
 export default {
   name: 'Control',
   components: {
@@ -47,6 +46,7 @@ export default {
     DROPDOWNLIST,
     CHECKBOX,
     FILE,
+    IMG,
     CASCADER,
     NUMBER
   },
@@ -63,12 +63,12 @@ export default {
       this.$set(this.formData, field.fieldname, value)
       this.$emit('input', this.formData)
     },
-    onChange (file, fileList) {
+    onChange (file) {
       let _this = this
       let fieldKey = 'CN_NAME'
       let fileName = file.name.substr(0, file.name.lastIndexOf('.'))
-      _this.tab.rows.forEach((row, index) => {
-        row.controls.forEach((field, index) => {
+      _this.tab.rows.forEach((row) => {
+        row.controls.forEach((field) => {
           if (field.type !== 'LABEL' && field.fieldname === fieldKey && field.value.length === 0) {
             field.value = fileName
             return
@@ -96,15 +96,13 @@ export default {
       } else if (action.type === 'ok') {
         api = '/action'
       }
-      // 弹出新窗口下载
       _this.$http.post(api, {
         FORMGUID: _this.page.guid,
         ACTION: action.name,
         OBJ: _this.formData
       }).then((response) => {
         if (action.type === 'downfile') {
-          let url = process.env.API_FILE + '/' + response.data
-          window.open(url, '_blank')
+          window.open('#/download?id=' + response.data, '_blank')
           _this.$emit('dialogClose')
         } else if (action.type === 'ok') {
           _this.$emit('dialogClose', response.data)

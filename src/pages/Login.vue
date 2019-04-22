@@ -9,33 +9,25 @@
           <div class="title">用户登录</div>
         </el-col>
       </el-row>
-      <el-row type="flex" justify="center">
-        <el-col>
-          <el-input id="name" v-model="username" placeholder="请输入帐号">
+      <el-form ref="form" :rules="rules" :model="form">
+        <el-form-item prop="username">
+          <el-input id="name" v-model="form.username" placeholder="请输入帐号">
             <template slot="prepend">
               <i class="icon ion-md-person"></i>
             </template>
           </el-input> 
-        </el-col>
-      </el-row>
-      <el-row type="flex" justify="center">
-        <el-col>
-          <el-input id="password" v-model="password" type="password" placeholder="请输入密码">
+        </el-form-item>
+        <el-form-item prop="password">
+          <el-input id="password" v-model="form.password" type="password" placeholder="请输入密码">
             <template slot="prepend">
               <i class="icon ion-md-lock"></i>
             </template>
           </el-input>
-        </el-col>
-      </el-row>
-      <el-row type="flex">
-        <el-col style="margin-bottom:40px">
-        </el-col>
-      </el-row>
-      <el-row type="flex" justify="center">
-        <el-col>
-          <el-button id="login" v-on:click="submit" style="width:100%" type="primary">登录</el-button>
-        </el-col>
-      </el-row>
+        </el-form-item>
+        <el-form-item>
+          <el-button id="login" native-type="submit" v-on:click="submit" style="width:100%" type="primary">登录</el-button>
+        </el-form-item>
+      </el-form>
     </div>
   </div>
 </template>
@@ -43,10 +35,20 @@
 <script>
 export default {
   data: () => ({
-    username: 'cyx',
-    password: '123',
-    error: false,
-    errMsg: null
+    form: {
+      username: '',
+      password: ''
+    },
+    rules: {
+      username: [
+        { required: true, message: '请输入账号', trigger: 'blur' },
+        { min: 2, message: '账号名称不符合规范，请输入至少 2 个字符', trigger: 'blur' }
+      ],
+      password: [
+        { required: true, message: '请输入密码', trigger: 'blur' },
+        { min: 3, message: '密码不符合规范，请输入至少 3 个字符', trigger: 'blur' }
+      ]
+    }
   }),
   methods: {
     setCookie: function (cname, cvalue, exdays) {
@@ -56,44 +58,35 @@ export default {
       document.cookie = cname + "=" + cvalue + "; " + expires;
     },
     submit () {
-      if (!this.username) {
-        this.error = true
-        this.errMsg = '请输入用户名'
-      } else if (!this.password) {
-        this.error = true
-        this.errMsg = '请输入密码'
-      } else {
-        this.error = false
-        let _this = this
-        let user = _this.username
-        let password = _this.password
-        // 登录
+      let _this = this
+      _this.$refs['form'].validate((valid) => {
+        if (valid) {
         // 验证成功后，修改$http.defaults.headers.common['Authorization'] = 'bearer ' + AUTH_TOKEN
         // 使每次使用webapi时都携带验证信息
-        _this.$http.post('/Authorize', {
-          user,
-          password
-        })
+        _this.$http.post('/Authorize', _this.form)
           .then(function (response) {
+            let user = _this.form.username
             let token = response.data.token
             let username = response.data.username
             let rolename = response.data.rolename
+            let avatar = response.data.avatar
             if (token) {
               _this.$http.defaults.headers.common['Authorization'] = 'bearer ' + token
               _this.$store.commit('user/setUser', {
                 user,
+                avatar,
                 username,
                 rolename,
                 token
               })
               _this.setCookie('loginguid', response.data.loginguid, 1)
               _this.$router.push('/')
-            } else {
-              _this.error = true
-              _this.errMsg = response.data
             }
           })
-      }
+        } else {
+          return false;
+        }
+      });
     }
   }
 }
@@ -154,8 +147,5 @@ export default {
     padding-bottom: 20px;
     margin-bottom: 20px;
     border-bottom: 1px solid #dedede;
-  }
-  .el-col {
-    margin-bottom: 10px;
   }
 </style>

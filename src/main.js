@@ -20,7 +20,7 @@ import { Row, Col } from 'element-ui'
 import { Menu, Submenu, MenuItem, MenuItemGroup } from 'element-ui'
 import { Tabs, TabPane } from 'element-ui'
 import { Collapse, CollapseItem } from 'element-ui'
-import { Button, ButtonGroup, Dropdown, DropdownItem, Upload, Select, Dialog, Input, Switch } from 'element-ui'
+import { Form, FormItem, Button, ButtonGroup, Dropdown, DropdownMenu, DropdownItem, Upload, Select, Dialog, Input, Switch } from 'element-ui'
 import { Table, TableColumn, Pagination } from 'element-ui'
 import { Tree } from 'element-ui'
 import { Option, Checkbox, Cascader } from 'element-ui'
@@ -40,9 +40,12 @@ Vue.component(Tabs.name, Tabs)
 Vue.component(TabPane.name, TabPane)
 Vue.component(Collapse.name, Collapse)
 Vue.component(CollapseItem.name, CollapseItem)
+Vue.component(Form.name, Form)
+Vue.component(FormItem.name, FormItem)
 Vue.component(ButtonGroup.name, ButtonGroup)
 Vue.component(Button.name, Button)
 Vue.component(Dropdown.name, Dropdown)
+Vue.component(DropdownMenu.name, DropdownMenu)
 Vue.component(DropdownItem.name, DropdownItem)
 Vue.component(DatePicker.name, DatePicker)
 Vue.component(Select.name, Select)
@@ -60,12 +63,13 @@ Vue.component(Upload.name, Upload)
 
 
 Vue.prototype.$notify = Notification
+Vue.prototype.$message = Message
 Vue.prototype.$confirm = MessageBox.confirm
 Vue.config.productionTip = false
 
 let store = getStore()
 let router = getRouter({store})
-getAxios({Vue, store, message: Message })
+getAxios({Vue, router, store, message: Message })
 registComp({ Vue })
 
 

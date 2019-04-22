@@ -25,25 +25,27 @@
             ref="tree"
             node-key="guid"
             @current-change="nodeSelect"
+            :allow-drop="allowDrop"
+            @node-drag-start="handleDragStart"
+            @node-drag-end="handleDragEnd"
+            :draggable="tab.treeview.canDrag=='True'"
             :expand-on-click-node="false"
             :data="tab.tree"
             :props="defaultProps"
             :load="onLazyLoad">
-            <div slot-scope="{ node, data }">
-              <div @contextmenu.prevent="showMenu($event, data)">
-                <span style="margin-right: 5px"><img style="vertical-align:middle" :src="iconUrl(data)" /></span>
-                <span :style="{color: data.color, backgroundColor: data.bgColor}">{{ node.label }}</span>
-              </div>
+            <div @contextmenu.prevent="onContextMenu($event, data)" slot-scope="{ node, data }">
+              <span style="margin-right: 5px"><img style="vertical-align:middle" :src="iconUrl(data)" /></span>
+              <span :style="{color: data.color, backgroundColor: data.bgColor}">{{ node.label }}</span>
             </div>
           </el-tree>
         </div>
       </el-aside>
-      <el-main>
+      <el-main :style="{ height: height + 'px' }">
         <div v-if="fileCount > 0 && isIcon">
         <el-row v-for="row in rowCount" :key="row">
           <template v-for="(col,index) in colCount">
             <el-col v-if="(row-1)*rowCount+col <= fileCount" :key="index" :span="24 / colCount">
-              <div class="file" @contextmenu.prevent="showMenu($event, currFolder[(row-1)*rowCount+col-1])">
+              <div class="file" @contextmenu.prevent="onContextMenu($event, currFolder[(row-1)*rowCount+col-1])">
                 <img :src="iconUrl(currFolder[(row-1)*rowCount+col-1])" />
                 <div class="file-text">{{currFolder[(row-1)*rowCount+col-1].label}}</div>
               </div>
@@ -58,7 +60,7 @@
           <el-row
             v-for="(row,index) in currFolder"
             :key="index">
-            <div class="row" @contextmenu.prevent="showMenu($event, row)">
+            <div class="row" @contextmenu.prevent="onContextMenu($event, row)">
               <el-col class="col" :span="colHeaders[0].width">
                 <img style="vertical-align:middle" :src="iconUrl(row)" />
                 {{row.label}}
@@ -134,17 +136,15 @@ export default {
   },
   mounted () {
     let _this = this
-    document.body.addEventListener('click', function(event) {
+    document.body.addEventListener('click', function() {
       let list = document.getElementById('menu')
       if (list && list.style.display === 'block') {
         list.style.display = 'none'
       }
     })
     window.onresize = () => {
-      return (() => {
-        window.fullHeight = document.documentElement.clientHeight
-        _this.height = window.fullHeight - 105
-      })()
+      window.fullHeight = document.documentElement.clientHeight
+      _this.height = window.fullHeight - 105
     }
   },
   watch: {
@@ -167,6 +167,16 @@ export default {
       }
       return ''
     },
+    refresh () {
+      let _this = this
+      _this.$http.post('/tree', {
+        ACTION: _this.action ? _this.action.name : 'refresh',
+        TREEVIEW: _this.tab.treeview
+      }).then((response) => {
+        _this.convertTree(response.data)
+        _this.$set(_this.tab, 'tree', response.data)
+      })
+    },
     onLazyLoad (node, resolve) {
       let _this = this
       if (node.level === 0) {
@@ -180,7 +190,7 @@ export default {
           TREEVIEW: _this.tab.treeview,
           TREE: node.data
         }).then((response) => {
-          _this.convertTree(response.data)
+          _this.convertTree(response.data, node.data)
           _this.currFolder = response.data
           return resolve(response.data)
         })
@@ -198,7 +208,7 @@ export default {
         }
       }
     },
-    nodeSelect (data, node, obj) {
+    nodeSelect (data, node) {
       let _this = this
       let children = []
       if ( node.childNodes.length > 0 ) {
@@ -207,6 +217,71 @@ export default {
         }
       }
       _this.currFolder = children
+    },
+    allowDrop (draggingNode, dropNode) {
+      if (dropNode.level < 1) {
+        return false
+      } else if (draggingNode.canDrag === 'False') {
+        return false
+      } else if (dropNode.canDragIn === 'False') {
+        return false
+      } else {
+        return true
+      }
+    },
+    handleDragStart (draggingNode) {
+      let _this = this
+      _this.parentOld = draggingNode.parent
+    },
+    handleDragEnd (draggingNode, dropNode, dropType) {
+      let _this = this
+      let node = draggingNode
+      let parentOld = _this.parentOld
+      let parentNew = dropNode
+      let who = dropNode
+      if (dropNode === null) {
+        return
+      }
+      if (dropNode !== draggingNode) {
+        dropNode.isLeaf = false
+      }
+      if (dropType !== 'inner') {
+        parentNew = dropNode.parent
+      }
+      if (node) {
+        node = {
+          classname: node.data.classname,
+          guid: node.data.guid
+        }
+      }
+      if (who) {
+        who = {
+          classname: who.data.classname,
+          guid: who.data.guid
+        }
+      }
+      if (parentOld) {
+        parentOld = {
+          classname: parentOld.data.classname,
+          guid: parentOld.data.guid
+        }
+      }
+      if (parentNew) {
+        parentNew = {
+          classname: parentNew.data.classname,
+          guid: parentNew.data.guid
+        }
+      }
+      _this.$http.post('/nodemove', {
+        treeview: _this.tab.treeview,
+        node,
+        parentOld,
+        parentNew,
+        dropType,
+        who
+      }).then(() => {
+        
+      })
     },
     clickEvent (item, node) {
       let _this = this
@@ -218,10 +293,10 @@ export default {
       let _this = this
       if (action.msg && action.msg.length > 0) {
         _this.$confirm(action.msg)
-          .then(_ => {
+          .then(() => {
             _this.clickEventAction(action, data)
           })
-          .catch(_ => {})
+          .catch(() => {})
       } else {
         _this.clickEventAction(action, data)
       }
@@ -239,17 +314,13 @@ export default {
       if (action) {
         _this.action = action
         if (action.type === 'refresh') {
-          _this.$http.post('/tree', {
-            ACTION: action.name,
-            TREEVIEW: _this.tab.treeview
-          }).then((response) => {
-            _this.convertTree(response.data)
-            _this.$set(_this.tab, 'tree', response.data)
-          })
+          _this.refresh()
         } else {
           let api = '/action'
           if (action.type === 'browser') {
             api = '/download'
+          } else if (action.type === 'URL') {
+            api = '/url'
           }
           _this.$http.post(api, {
             FORMGUID: _this.page.guid,
@@ -260,8 +331,12 @@ export default {
               _this.dialogPage = response.data
               _this.showDialog = true
             } else if (action.type === 'browser') {
-              let url = process.env.API_FILE + '/' + response.data
+              let url = process.env.VUE_APP_API_FILE + '/' + response.data
               window.open(url, '_blank')
+            } else if (action.type === 'URL') {
+              let url = response.data
+              _this.$store.commit('user/setParam', url)
+              window.open('#/view', '_blank')
             } else if (action.type === 'detail') {
               // 保存参数
               _this.$store.commit('user/setParam', {
@@ -276,9 +351,12 @@ export default {
         }
       }
     },
-    showMenu (event, node) {
+    onContextMenu (event, node) {
       let _this = this
       let list = document.getElementById('menu') || document.createElement('ul')
+      if (!node.menu) {
+        return
+      }
       if (!document.getElementById('menu')) {
         _this.$refs.body.appendChild(list)
       }
@@ -286,9 +364,6 @@ export default {
       list.className = 'menu'
       list.style.display = 'block'
       list.innerHTML = ''
-      if (!node.menu) {
-        return
-      }
       for ( let i = 0, j = node.menu.length; i < j; i++) {
         let menu = node.menu[i]
         let listitem = document.createElement('li')
@@ -333,18 +408,21 @@ export default {
         _this.convertTree(data.tree)
         if (_this.action.type === 'add') {
           // 刷新节点
-          if (typeof _this.node === 'object') {
-            if (!(_this.node.children instanceof Array)) {
-              _this.$set(_this.node, 'children', []);
-            }
-            _this.node.children.push(data.tree)
-          } else {
-            _this.tab.tree.push(data.tree)
-          }
+          _this.refresh()
+          // if (typeof _this.node === 'object') {
+          //   if (!(_this.node.children instanceof Array)) {
+          //     _this.$set(_this.node, 'children', []);
+          //   }
+          //   _this.node.children.push(data.tree)
+          // } else {
+          //   _this.tab.tree.push(data.tree)
+          // }
         } else if (_this.action.type === 'mod') {
-          Object.assign(_this.node, data.tree)
+          _this.refresh()
+          // Object.assign(_this.node, data.tree)
         } else if (_this.action.type === 'delete') {
-          _this.$refs.tree.remove(_this.node)
+          _this.refresh()
+          // _this.$refs.tree.remove(_this.node)
         }
       } else if (_this.action.type === 'browser') {
         let url = process.env.API_FILE + '/' + data
@@ -358,6 +436,8 @@ export default {
         })
         // 打开新页面
         window.open('#/detail', '_blank')
+      } else {
+        _this.refresh()
       }
     }
   }

@@ -1,9 +1,8 @@
 <template>
   <div class="text-left">
-    <el-button v-if="value" plain size="small" @click="clickEvent">
+    <el-button plain @click="clickEvent">
         {{value}}
     </el-button>
-    <el-button v-else type="success" icon="el-icon-check" circle @click="clickEvent"></el-button>
   </div>
 </template>
 <script>

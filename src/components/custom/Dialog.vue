@@ -1,17 +1,16 @@
 <template>
   <el-dialog
-  v-if="showDialog" 
+  v-if="showDialog"
   :title="page.name"
-  :before-close="handleClose"
+  :before-close="dialogClose"
   :visible.sync="showDialog"
   @input="$emit('dialogClose')"
   :width="page.width+'px'">
-    <span slot="footer" class="dialog-footer">
+    <span v-if="page.showButton == 'True'" slot="footer" class="dialog-footer">
       <el-button @click="$emit('dialogClose')">取 消</el-button>
       <el-button type="primary" @click="dialogOk">确 定</el-button>
     </span>
     <el-tabs v-model="activeName">
-      <!-- 选项卡 - 注意slot="title" -->
       <el-tab-pane
       v-for="(tab, index) in page.tabs"
       :key="tab.guid"
@@ -21,7 +20,7 @@
         <n-table v-if="tab.type=='grid'" :tab="tab" :page="page" />
         <n-tree v-else-if="tab.type=='tree'" :tab="tab" :page="page" />
         <n-explorer v-else-if="tab.type=='browser'" :tab="tab" :page="page" />
-        <n-control v-else-if="tab.type=='field'" ref="control" :tab="tab" :page="page" :files="files" v-model="formData" @uploaded="uploaded" />
+        <n-control v-else-if="tab.type=='field'" ref="control" :tab="tab" :page="page" :files="files" v-model="formData" @uploaded="uploaded" @dialogClose="dialogClose" />
       </el-tab-pane>
     </el-tabs>
   </el-dialog>
@@ -37,9 +36,10 @@ export default {
   }),
   props: ['showDialog', 'page'],
   methods: {
-    handleClose () {
+    dialogClose (data) {
       let _this = this
-      _this.$emit('dialogClose')
+      _this.formData = {}
+      _this.$emit('dialogClose', data)
     },
     uploaded (filePath) {
       let _this = this
@@ -55,7 +55,7 @@ export default {
         .then((response) => {
           if (response.status === 200) {
             // 关闭弹窗
-            _this.$emit('dialogClose', response.data)
+            _this.dialogClose(response.data)
           }
         })
     }

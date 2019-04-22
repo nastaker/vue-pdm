@@ -10,6 +10,8 @@ module.exports = {
         limit: 10240 
       }))
 
+      
+
     config
     .plugin('copy')
     .use(copyWebpackPlugin, [

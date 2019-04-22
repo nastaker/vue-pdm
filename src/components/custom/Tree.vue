@@ -6,8 +6,12 @@
     <el-tree
     lazy
     ref="tree"
-    :expand-on-click-node="false"
     node-key="guid"
+    :allow-drop="allowDrop"
+    @node-drag-start="handleDragStart"
+    @node-drag-end="handleDragEnd"
+    :draggable="tab.treeview.canDrag=='True'"
+    :expand-on-click-node="false"
     :data="tab.tree"
     :props="defaultProps"
     :load="onLazyLoad">
@@ -50,6 +54,16 @@ export default {
       }
       return ''
     },
+    refresh () {
+      let _this = this
+      _this.$http.post('/tree', {
+        ACTION: _this.action ? _this.action.name : 'refresh',
+        TREEVIEW: _this.tab.treeview
+      }).then((response) => {
+        _this.convertTree(response.data)
+        _this.$set(_this.tab, 'tree', response.data)
+      })
+    },
     onLazyLoad (node, resolve) {
       let _this = this
       if (node.level === 0) {
@@ -62,9 +76,179 @@ export default {
           TREEVIEW: _this.tab.treeview,
           TREE: node.data
         }).then((response) => {
-          _this.convertTree(response.data)
-          return resolve(response.data)
+          if (response.data && response.data instanceof Array) {
+            _this.convertTree(response.data)
+            return resolve(response.data)
+          }
+          return resolve([])
         })
+      }
+    },
+    allowDrop (draggingNode, dropNode) {
+      if (dropNode.level < 1) {
+        return false
+      } else if (draggingNode.data.canDrag === 'False') {
+        return false
+      } else if (dropNode.data.canDragIn === 'False') {
+        return false
+      } else {
+        return true
+      }
+    },
+    handleDragStart (draggingNode) {
+      let _this = this
+      _this.parentOld = draggingNode.parent
+    },
+    handleDragEnd (draggingNode, dropNode, dropType) {
+      let _this = this
+      let node = draggingNode
+      let parentOld = _this.parentOld
+      let parentNew = dropNode
+      let who = dropNode
+      if (dropNode === null) {
+        return
+      }
+      if (dropNode !== draggingNode) {
+        dropNode.isLeaf = false
+      }
+      if (dropType !== 'inner') {
+        parentNew = dropNode.parent
+      }
+      if (node) {
+        node = {
+          classname: node.data.classname,
+          guid: node.data.guid
+        }
+      }
+      if (who) {
+        who = {
+          classname: who.data.classname,
+          guid: who.data.guid
+        }
+      }
+      if (parentOld) {
+        parentOld = {
+          classname: parentOld.data.classname,
+          guid: parentOld.data.guid
+        }
+      }
+      if (parentNew) {
+        parentNew = {
+          classname: parentNew.data.classname,
+          guid: parentNew.data.guid
+        }
+      }
+      _this.$http.post('/nodemove', {
+        treeview: _this.tab.treeview,
+        node,
+        parentOld,
+        parentNew,
+        dropType,
+        who
+      }).then(() => {
+      })
+    },
+    clickEvent (item, node) {
+      let _this = this
+      if (item.action) {
+        _this.beforeClickEventAction(item.action, node)
+      }
+    },
+    beforeClickEventAction (action, data) {
+      let _this = this
+      if (action.msg && action.msg.length > 0) {
+        _this.$confirm(action.msg)
+          .then(() => {
+            _this.clickEventAction(action, data)
+          })
+          .catch(() => {})
+      } else {
+        _this.clickEventAction(action, data)
+      }
+    },
+    clickEventAction (action, data) {
+      let _this = this
+      if (data) {
+        _this.node = data
+        _this.nodeobj = {
+          CLASSNAME: data.classname,
+          GUID: data.guid
+        }
+      } else {
+        _this.node = undefined
+        _this.nodeobj = undefined
+      }
+      // 判断按钮是否有action
+      if (action) {
+        _this.action = action
+        if (action.type === 'refresh') {
+          _this.refresh()
+        } else {
+          let api = '/action'
+          if (action.type === 'browser') {
+            api = '/download'
+          } else if (action.type === 'URL') {
+            api = '/url'
+          }
+          _this.$http.post(api, {
+            FORMGUID: _this.page.guid,
+            ACTION: action.name,
+            OBJ: _this.nodeobj
+          }).then((response) => {
+            if (action.isform === 'True') {
+              _this.dialogPage = response.data
+              _this.showDialog = true
+            } else if (action.type === 'browser') {
+              let url = process.env.VUE_APP_API_FILE + '/' + response.data
+              window.open(url, '_blank')
+            } else if (action.type === 'detail') {
+              // 保存参数
+              _this.$store.commit('user/setParam', {
+                FORMGUID: _this.page.guid,
+                ACTION: action.name,
+                OBJ: _this.nodeobj
+              })
+              // 打开新页面
+              window.open('#/detail', '_blank')
+            } else if (_this.action.type === 'delete') {
+              _this.$refs.tree.remove(_this.node)
+            } else if (action.type === 'URL') {
+              let url = response.data
+              _this.$store.commit('user/setParam', url)
+              window.open('#/view', '_blank')
+            } else {
+              _this.refresh()
+            }
+          })
+        }
+      }
+    },
+    dialogClose (data) {
+      let _this = this
+      _this.showDialog = false
+      if (typeof data !== 'object') {
+        return
+      }
+      _this.convertTree(data.tree)
+      // 拿到回调data
+      // 判断是添加还是修改
+      if (!_this.action) {
+        return
+      }
+      if (_this.action.type === 'add') {
+        // 刷新节点
+        _this.refresh()
+        // if (typeof _this.node === 'object') {
+        //   if (!(_this.node.children instanceof Array)) {
+        //     _this.$set(_this.node, 'children', [])
+        //   }
+        //   _this.node.children.push(data.tree)
+        // } else {
+        //   _this.tab.tree.push(data.tree)
+        // }
+      } else if (_this.action.type === 'mod') {
+        _this.refresh()
+        // Object.assign(_this.node, data.tree)
       }
     },
     convertTree (tree) {
@@ -83,105 +267,6 @@ export default {
           } else if (tree.children && tree.children instanceof Array) {
             this.convertTree(tree.children)
           }
-      }
-    },
-    clickEvent (item, node) {
-      let _this = this
-      if (item.action) {
-        _this.beforeClickEventAction(item.action, node)
-      }
-    },
-    beforeClickEventAction (action, data) {
-      let _this = this
-      if (action.msg && action.msg.length > 0) {
-        _this.$confirm(action.msg)
-          .then(_ => {
-            _this.clickEventAction(action, data)
-            done()
-          })
-          .catch(_ => {})
-      } else {
-        _this.clickEventAction(action, data)
-      }
-    },
-    clickEventAction (action, data) {
-      let _this = this
-      if (data) {
-        _this.node = data
-        _this.nodeobj = {
-          CLASSNAME: data.classname,
-          GUID: data.guid
-        }
-      } else {
-        _this.nodeobj = undefined
-      }
-      // 判断按钮是否有action
-      if (action) {
-        _this.action = action
-        if (action.type === 'refresh') {
-          _this.$http.post('/tree', {
-            ACTION: action.name,
-            TREEVIEW: _this.tab.treeview
-          }).then((response) => {
-            _this.convertTree(response.data)
-            _this.$set(_this.tab, 'tree', response.data)
-          })
-        } else {
-          let api = '/action'
-          if (action.type === 'browser') {
-            api = '/download'
-          }
-          _this.$http.post(api, {
-            FORMGUID: _this.page.guid,
-            ACTION: action.name,
-            OBJ: _this.nodeobj
-          }).then((response) => {
-            if (action.isform === 'True') {
-              _this.dialogPage = response.data
-              _this.showDialog = true
-            } else if (action.type === 'browser') {
-              let url = process.env.API_FILE + '/' + response.data
-              window.open(url, '_blank')
-            } else if (action.type === 'detail') {
-              // 保存参数
-              _this.$store.commit('user/setParam', {
-                FORMGUID: _this.page.guid,
-                ACTION: action.name,
-                OBJ: _this.nodeobj
-              })
-              // 打开新页面
-              window.open('#/detail', '_blank')
-            }
-          })
-        }
-      }
-    },
-    dialogClose (data) {
-      let _this = this
-      _this.showDialog = false
-      if (!data) {
-        return
-      }
-      _this.convertTree(data.tree)
-      // 拿到回调data
-      // 判断是添加还是修改
-      if (!_this.action) {
-        return
-      }
-      if (_this.action.type === 'add') {
-        // 刷新节点
-        if (typeof _this.node === 'object') {
-          if (!(_this.node.children instanceof Array)) {
-            _this.$set(_this.node, 'children', [])
-          }
-          _this.node.children.push(data.tree)
-        } else {
-          _this.tab.tree.push(data.tree)
-        }
-      } else if (_this.action.type === 'mod') {
-        Object.assign(_this.node, data.tree)
-      } else if (_this.action.type === 'delete') {
-        _this.$refs.tree.remove(_this.node)
       }
     }
   }

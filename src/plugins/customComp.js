@@ -4,7 +4,7 @@ import NExplorer from '@/components/custom/Explorer.vue'
 import NControl from '@/components/custom/Control.vue'
 import NDialog from '@/components/custom/Dialog.vue'
 import NButtonGroup from '@/components/custom/ButtonGroup.vue'
-import elCascaderMulti from "multi-cascader-base-ele"
+import elCascaderMulti from "el-cascader-multi"
 
 export default ({ Vue }) => {
   Vue.use(elCascaderMulti)
