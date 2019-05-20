@@ -15,6 +15,7 @@
     "ionicons": "^4.5.5",
     "node-sass": "^4.11.0",
     "sass-loader": "^7.1.0",
+    "v-viewer": "^1.4.0",
     "vue": "^2.6.6",
     "vue-html-loader": "^1.2.4",
     "vue-loader": "^15.7.0",

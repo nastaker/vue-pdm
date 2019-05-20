@@ -56,13 +56,44 @@ export default {
     },
     refresh () {
       let _this = this
-      _this.$http.post('/tree', {
-        ACTION: _this.action ? _this.action.name : 'refresh',
-        TREEVIEW: _this.tab.treeview
-      }).then((response) => {
-        _this.convertTree(response.data)
-        _this.$set(_this.tab, 'tree', response.data)
-      })
+      let isRefreshParent = false
+      let node = undefined
+      if (_this.node) {
+        node = _this.$refs.tree.getNode(_this.node.guid)
+        if (node.level > 1) {
+          node = node.parent
+          isRefreshParent = true
+        }
+      }
+      if (isRefreshParent) {
+        _this.$http.post('/tree', {
+          TREEVIEW: _this.tab.treeview,
+          TREE: node.data
+        }).then((response) => {
+          let rawTree = response.data
+          _this.convertTree(rawTree.tree)
+          // 将当前节点下所有子节点清空，并重新添加
+          for (let i = node.childNodes.length - 1, j = 0; i >= j; i--) {
+            let child = node.childNodes[i]
+            _this.$refs.tree.remove(child)
+          }
+          for (let i = 0, j = rawTree.tree.length; i < j; i++) {
+            let item = rawTree.tree[i]
+            _this.$refs.tree.append(item, node)
+          }
+          _this.node = undefined
+        })
+      } else {
+        _this.$http.post('/tree', {
+          ACTION: _this.action ? _this.action.name : 'refresh',
+          TREEVIEW: _this.tab.treeview
+        }).then((response) => {
+          let rawTree = response.data
+          _this.convertTree(rawTree.tree)
+          _this.$set(_this.tab, 'tree', rawTree.tree)
+          _this.$set(_this.tab, 'treeview', rawTree.treeview)
+        })
+      }
     },
     onLazyLoad (node, resolve) {
       let _this = this
@@ -76,9 +107,10 @@ export default {
           TREEVIEW: _this.tab.treeview,
           TREE: node.data
         }).then((response) => {
-          if (response.data && response.data instanceof Array) {
-            _this.convertTree(response.data)
-            return resolve(response.data)
+          let rawTree = response.data
+          if (rawTree.tree && rawTree.tree instanceof Array) {
+            _this.convertTree(rawTree.tree)
+            return resolve(rawTree.tree)
           }
           return resolve([])
         })
@@ -187,6 +219,8 @@ export default {
           let api = '/action'
           if (action.type === 'browser') {
             api = '/download'
+          } else if (action.type === 'downfile') {
+            api = '/download'
           } else if (action.type === 'URL') {
             api = '/url'
           }
@@ -198,6 +232,8 @@ export default {
             if (action.isform === 'True') {
               _this.dialogPage = response.data
               _this.showDialog = true
+            } else if (action.type === 'downfile') {
+              window.open(process.env.VUE_APP_API + '/download/' + response.data, '_blank')
             } else if (action.type === 'browser') {
               let url = process.env.VUE_APP_API_FILE + '/' + response.data
               window.open(url, '_blank')
@@ -226,12 +262,9 @@ export default {
     dialogClose (data) {
       let _this = this
       _this.showDialog = false
-      if (typeof data !== 'object') {
+      if (data === false) {
         return
       }
-      _this.convertTree(data.tree)
-      // 拿到回调data
-      // 判断是添加还是修改
       if (!_this.action) {
         return
       }
@@ -249,6 +282,8 @@ export default {
       } else if (_this.action.type === 'mod') {
         _this.refresh()
         // Object.assign(_this.node, data.tree)
+      } else {
+        _this.refresh()
       }
     },
     convertTree (tree) {

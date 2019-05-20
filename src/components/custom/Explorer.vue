@@ -28,12 +28,14 @@
             :allow-drop="allowDrop"
             @node-drag-start="handleDragStart"
             @node-drag-end="handleDragEnd"
+            @node-click="handleNodeClick"
+            @node-contextmenu="onContextMenu"
             :draggable="tab.treeview.canDrag=='True'"
             :expand-on-click-node="false"
             :data="tab.tree"
             :props="defaultProps"
             :load="onLazyLoad">
-            <div @contextmenu.prevent="onContextMenu($event, data)" slot-scope="{ node, data }">
+            <div slot-scope="{ node, data }">
               <span style="margin-right: 5px"><img style="vertical-align:middle" :src="iconUrl(data)" /></span>
               <span :style="{color: data.color, backgroundColor: data.bgColor}">{{ node.label }}</span>
             </div>
@@ -91,6 +93,7 @@ export default {
     isIcon: true,
     action: undefined,
     currFolder: [],
+    parent: undefined,
     colHeaders: [
       {
         name: '名称',
@@ -137,10 +140,7 @@ export default {
   mounted () {
     let _this = this
     document.body.addEventListener('click', function() {
-      let list = document.getElementById('menu')
-      if (list && list.style.display === 'block') {
-        list.style.display = 'none'
-      }
+      _this.hideContextMenu()
     })
     window.onresize = () => {
       window.fullHeight = document.documentElement.clientHeight
@@ -167,15 +167,53 @@ export default {
       }
       return ''
     },
+    hideContextMenu () {
+      let list = document.getElementById('menu')
+      if (list && list.style.display === 'block') {
+        list.style.display = 'none'
+      }
+    },
     refresh () {
       let _this = this
-      _this.$http.post('/tree', {
-        ACTION: _this.action ? _this.action.name : 'refresh',
-        TREEVIEW: _this.tab.treeview
-      }).then((response) => {
-        _this.convertTree(response.data)
-        _this.$set(_this.tab, 'tree', response.data)
-      })
+      let isRefreshParent = false
+      let node = undefined
+      if (_this.node) {
+        node = _this.$refs.tree.getNode(_this.node.guid)
+        if (node.level > 1) {
+          node = node.parent
+          isRefreshParent = true
+        }
+      }
+      if (isRefreshParent) {
+        _this.$http.post('/tree', {
+          TREEVIEW: _this.tab.treeview,
+          TREE: node.data
+        }).then((response) => {
+          let rawTree = response.data
+          _this.convertTree(rawTree.tree)
+          _this.currFolder = rawTree.tree
+          // 将当前节点下所有子节点清空，并重新添加
+          for (let i = node.childNodes.length - 1, j = 0; i >= j; i--) {
+            let child = node.childNodes[i]
+            _this.$refs.tree.remove(child)
+          }
+          for (let i = 0, j = _this.currFolder.length; i < j; i++) {
+            let item = _this.currFolder[i]
+            _this.$refs.tree.append(item, node)
+          }
+          _this.node = undefined
+        })
+      } else {
+        _this.$http.post('/tree', {
+          ACTION: _this.action ? _this.action.name : 'refresh',
+          TREEVIEW: _this.tab.treeview
+        }).then((response) => {
+          let rawTree = response.data
+          _this.convertTree(rawTree.tree)
+          _this.$set(_this.tab, 'tree', rawTree.tree)
+          _this.$set(_this.tab, 'treeview', rawTree.treeview)
+        })
+      }
     },
     onLazyLoad (node, resolve) {
       let _this = this
@@ -190,9 +228,10 @@ export default {
           TREEVIEW: _this.tab.treeview,
           TREE: node.data
         }).then((response) => {
-          _this.convertTree(response.data, node.data)
-          _this.currFolder = response.data
-          return resolve(response.data)
+          let rawTree = response.data
+          _this.convertTree(rawTree.tree)
+          _this.currFolder = rawTree.tree
+          return resolve(rawTree.tree)
         })
       }
     },
@@ -206,6 +245,55 @@ export default {
             this.convertTree(treenode.children)
           }
         }
+      }
+    },
+    handleNodeClick () {
+      this.hideContextMenu()
+    },
+    onContextMenu (event, node) {
+      let _this = this
+      let list = document.getElementById('menu') || document.createElement('ul')
+      if (!node.menu) {
+        _this.hideContextMenu()
+        return
+      }
+      if (!document.getElementById('menu')) {
+        _this.$refs.body.appendChild(list)
+      }
+      _this.node = node
+      list.id = 'menu'
+      list.className = 'menu'
+      list.style.display = 'block'
+      list.innerHTML = ''
+      for ( let i = 0, j = node.menu.length; i < j; i++) {
+        let menu = node.menu[i]
+        let listitem = document.createElement('li')
+        listitem.className = 'menu-item'
+        listitem.innerText = menu.name
+        listitem.addEventListener('click', function() {
+          _this.clickEvent(menu, node)
+        })
+        list.appendChild(listitem)
+      }
+      let pnode = _this.$refs.body
+      let position = ''
+      while (position !== 'relative' && position !== 'absolute' && pnode.tagName !== 'BODY') {
+        pnode = pnode.parentNode
+        position = window.getComputedStyle(pnode, null).position
+      }
+      let listWidth = parseInt(window.getComputedStyle(list, null).width)
+      let listHeight = parseInt(window.getComputedStyle(list, null).height)
+      let boxWidth = parseInt(window.getComputedStyle(pnode, null).width)
+      let boxHeight = parseInt(window.getComputedStyle(pnode, null).height)
+      if ((event.clientY - pnode.offsetTop) + listHeight > boxHeight) {
+        list.style.top = (event.clientY - pnode.offsetTop) - listHeight + 'px'
+      } else {
+        list.style.top = (event.clientY - pnode.offsetTop) + 'px'
+      }
+      if ((event.clientX - pnode.offsetLeft) + listWidth > boxWidth) {
+        list.style.left = (event.clientX - pnode.offsetLeft) - listWidth + 'px'
+      } else {
+        list.style.left = (event.clientX - pnode.offsetLeft) + 'px'
       }
     },
     nodeSelect (data, node) {
@@ -242,9 +330,6 @@ export default {
       if (dropNode === null) {
         return
       }
-      if (dropNode !== draggingNode) {
-        dropNode.isLeaf = false
-      }
       if (dropType !== 'inner') {
         parentNew = dropNode.parent
       }
@@ -280,7 +365,13 @@ export default {
         dropType,
         who
       }).then(() => {
-        
+        if (dropNode !== draggingNode) {
+          dropNode.isLeaf = false
+        }
+      }).catch(() => {
+        //将其还原回去
+        _this.$refs.tree.remove(draggingNode.data)
+        _this.$refs.tree.append(draggingNode.data, _this.parentOld)
       })
     },
     clickEvent (item, node) {
@@ -319,6 +410,8 @@ export default {
           let api = '/action'
           if (action.type === 'browser') {
             api = '/download'
+          } else if (action.type === 'downfile') {
+            api = '/download'
           } else if (action.type === 'URL') {
             api = '/url'
           }
@@ -333,6 +426,8 @@ export default {
             } else if (action.type === 'browser') {
               let url = process.env.VUE_APP_API_FILE + '/' + response.data
               window.open(url, '_blank')
+            } else if (action.type === 'downfile') {
+              window.open(process.env.VUE_APP_API + '/download/' + response.data, '_blank')
             } else if (action.type === 'URL') {
               let url = response.data
               _this.$store.commit('user/setParam', url)
@@ -346,59 +441,17 @@ export default {
               })
               // 打开新页面
               window.open('#/detail', '_blank')
+            } else {
+              _this.refresh()
             }
           })
         }
       }
     },
-    onContextMenu (event, node) {
-      let _this = this
-      let list = document.getElementById('menu') || document.createElement('ul')
-      if (!node.menu) {
-        return
-      }
-      if (!document.getElementById('menu')) {
-        _this.$refs.body.appendChild(list)
-      }
-      list.id = 'menu'
-      list.className = 'menu'
-      list.style.display = 'block'
-      list.innerHTML = ''
-      for ( let i = 0, j = node.menu.length; i < j; i++) {
-        let menu = node.menu[i]
-        let listitem = document.createElement('li')
-        listitem.className = 'menu-item'
-        listitem.innerText = menu.name
-        listitem.addEventListener('click', function() {
-          _this.clickEvent(menu, node)
-        })
-        list.appendChild(listitem)
-      }
-      let pnode = _this.$refs.body
-      let position = ''
-      while (position !== 'relative' && position !== 'absolute' && pnode.tagName !== 'BODY') {
-        pnode = pnode.parentNode
-        position = window.getComputedStyle(pnode, null).position
-      }
-      let listWidth = parseInt(window.getComputedStyle(list, null).width)
-      let listHeight = parseInt(window.getComputedStyle(list, null).height)
-      let boxWidth = parseInt(window.getComputedStyle(pnode, null).width)
-      let boxHeight = parseInt(window.getComputedStyle(pnode, null).height)
-      if ((event.clientY - pnode.offsetTop) + listHeight > boxHeight) {
-        list.style.top = (event.clientY - pnode.offsetTop) - listHeight + 'px'
-      } else {
-        list.style.top = (event.clientY - pnode.offsetTop) + 'px'
-      }
-      if ((event.clientX - pnode.offsetLeft) + listWidth > boxWidth) {
-        list.style.left = (event.clientX - pnode.offsetLeft) - listWidth + 'px'
-      } else {
-        list.style.left = (event.clientX - pnode.offsetLeft) + 'px'
-      }
-    },
     dialogClose (data) {
       let _this = this
       _this.showDialog = false
-      if (!data) {
+      if (data === false) {
         return
       }
       if (!_this.action) {
@@ -406,24 +459,22 @@ export default {
       }
       if (data && typeof data.tree === 'object') {
         _this.convertTree(data.tree)
-        if (_this.action.type === 'add') {
-          // 刷新节点
-          _this.refresh()
-          // if (typeof _this.node === 'object') {
-          //   if (!(_this.node.children instanceof Array)) {
-          //     _this.$set(_this.node, 'children', []);
-          //   }
-          //   _this.node.children.push(data.tree)
-          // } else {
-          //   _this.tab.tree.push(data.tree)
-          // }
-        } else if (_this.action.type === 'mod') {
-          _this.refresh()
-          // Object.assign(_this.node, data.tree)
-        } else if (_this.action.type === 'delete') {
-          _this.refresh()
-          // _this.$refs.tree.remove(_this.node)
-        }
+        _this.refresh()
+        // if (_this.action.type === 'add') {
+        //   // 刷新节点
+        //   if (typeof _this.node === 'object') {
+        //     if (!(_this.node.children instanceof Array)) {
+        //       _this.$set(_this.node, 'children', []);
+        //     }
+        //     _this.node.children.push(data.tree)
+        //   } else {
+        //     _this.tab.tree.push(data.tree)
+        //   }
+        // } else if (_this.action.type === 'mod') {
+        //   Object.assign(_this.node, data.tree)
+        // } else if (_this.action.type === 'delete') {
+        //   _this.$refs.tree.remove(_this.node)
+        // }
       } else if (_this.action.type === 'browser') {
         let url = process.env.API_FILE + '/' + data
         window.open(url, '_blank')

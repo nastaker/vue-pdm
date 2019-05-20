@@ -71,11 +71,11 @@ export default {
         row.controls.forEach((field) => {
           if (field.type !== 'LABEL' && field.fieldname === fieldKey && field.value.length === 0) {
             field.value = fileName
+            _this.$set(this.formData, fieldKey, fileName)
             return
           }
         })
       }) 
-      _this.$set(this.formData, fieldKey, fileName)
     },
     uploaded (filepath) {
       let _this = this
@@ -102,7 +102,7 @@ export default {
         OBJ: _this.formData
       }).then((response) => {
         if (action.type === 'downfile') {
-          window.open('#/download?id=' + response.data, '_blank')
+          window.open( process.env.VUE_APP_API + '/download/' + response.data, '_blank')
           _this.$emit('dialogClose')
         } else if (action.type === 'ok') {
           _this.$emit('dialogClose', response.data)

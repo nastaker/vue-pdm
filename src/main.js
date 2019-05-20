@@ -13,6 +13,16 @@ import getAxios from './plugins/axios.js'
 import getStore from './store'
 import getRouter from './router'
 
+import Viewer from 'v-viewer'
+import 'viewerjs/dist/viewer.css'
+
+//Vue.use(Viewer) 默认配置写法
+Vue.use(Viewer, {
+    defaultOptions: {
+        zIndex: 9999
+    }
+})
+
 import 'element-ui/lib/theme-chalk/index.css'
 import { Notification, Message, MessageBox } from 'element-ui'
 import { Container, Aside, Header, Main, DatePicker } from 'element-ui'

@@ -29,7 +29,9 @@ export default ({ Vue, router, store, message }) => {
         message: errMsg,
         type: 'error'
       })
-      return Promise.reject(err)
+      if (result.code !== '0') {
+        return Promise.reject(err)
+      }
     }
     response.data = result.obj
     return response

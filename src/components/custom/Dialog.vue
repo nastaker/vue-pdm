@@ -2,12 +2,11 @@
   <el-dialog
   v-if="showDialog"
   :title="page.name"
-  :before-close="dialogClose"
+  :before-close="beforeDialogClose"
   :visible.sync="showDialog"
-  @input="$emit('dialogClose')"
   :width="page.width+'px'">
     <span v-if="page.showButton == 'True'" slot="footer" class="dialog-footer">
-      <el-button @click="$emit('dialogClose')">取 消</el-button>
+      <el-button @click="$emit('dialogClose', false)">取 消</el-button>
       <el-button type="primary" @click="dialogOk">确 定</el-button>
     </span>
     <el-tabs v-model="activeName">
@@ -36,6 +35,9 @@ export default {
   }),
   props: ['showDialog', 'page'],
   methods: {
+    beforeDialogClose () {
+      this.dialogClose(false)
+    },
     dialogClose (data) {
       let _this = this
       _this.formData = {}

@@ -1,15 +1,13 @@
 <template>
   <div class="body">
-    <img src="/static/images/title.png" class="pic_title"/>
-    <img src="/static/images/footer.png" class="pic_footer" />
     <div class="login-box-bg"></div>
     <div class="login-box">
       <el-row type="flex" justify="center">
         <el-col>
-          <div class="title">用户登录</div>
+          <div class="title">北京国文琰文化遗产数据管理应用系统</div>
         </el-col>
       </el-row>
-      <el-form ref="form" :rules="rules" :model="form">
+      <el-form @submit.native.prevent ref="form" :rules="rules" :model="form">
         <el-form-item prop="username">
           <el-input id="name" v-model="form.username" placeholder="请输入帐号">
             <template slot="prepend">
@@ -25,7 +23,7 @@
           </el-input>
         </el-form-item>
         <el-form-item>
-          <el-button id="login" native-type="submit" v-on:click="submit" style="width:100%" type="primary">登录</el-button>
+          <el-button id="login" native-type="submit" @click="submit" style="width:100%" type="primary">登录</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -83,8 +81,6 @@ export default {
               _this.$router.push('/')
             }
           })
-        } else {
-          return false;
         }
       });
     }
@@ -100,23 +96,13 @@ export default {
     background-size:cover;
     background-repeat: no-repeat;
   }
-  .pic_title {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-  }
-  .pic_footer {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-  }
   .login-box-bg {
     position: absolute;
-    width: 360px;
+    width: 380px;
     height: 250px;
     top: 50%;
     left: 50%;
-    margin-left: -180px;
+    margin-left: -190px;
     margin-top: -125px;
     border-width: 1px;
     border-color: #cdcdcd;
@@ -128,11 +114,11 @@ export default {
   }
   .login-box {
     position: absolute;
-    width: 360px;
+    width: 380px;
     height: 250px;
     top: 50%;
     left: 50%;
-    margin-left: -180px;
+    margin-left: -190px;
     margin-top: -125px;
     border-width: 1px;
     border-color: #cdcdcd;
@@ -141,8 +127,8 @@ export default {
     padding: 20px;
   }
   .title {
-    color: #333;
-    font-size: 20px;
+    color: #000;
+    font-size: 16px;
     font-weight: bold;
     padding-bottom: 20px;
     margin-bottom: 20px;
