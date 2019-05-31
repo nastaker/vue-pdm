@@ -7,10 +7,10 @@ const routes = [
         component: () => import('@/pages/Index.vue'),
         children: [
           {
-            path: '', component: () => import('@/pages/HelloWorld.vue')
+            path: '/test', component: () => import('@/components/custom/Explorer.vue')
           },
           {
-            path: '/test', component: () => import('@/components/custom/Explorer.vue')
+            path: '/helloworld', component: () => import('@/pages/HelloWorld.vue')
           },
           {
             path: '/listpage/:pageid',

@@ -223,6 +223,29 @@ export default {
     getCellClass () {
       return 'padding: 5px 0'
     },
+    export () {
+      let _this = this
+      let order = ''
+      _this.data = []
+      _this.loading = true
+      if (_this.sortBy) {
+        order = _this.sortBy + ' ' + _this.descending
+      }
+      _this.$http.post('/export', {
+        action: _this.action ? _this.action.name : 'refresh',
+        GUID: _this.tab.tableDef.guid,
+        PAGE: _this.pagenumber,
+        PAGECOUNT: _this.pagesize,
+        DEFQUERY: _this.tab.tableDef.defquery,
+        QUERY: _this.queryFields,
+        ORDER: order
+      })
+        .then(({ data }) => {
+          if (data) {
+            window.open(process.env.VUE_APP_API + '/download/' + data, '_blank')
+          }
+        })
+    },
     refresh () {
       let _this = this
       let order = ''
@@ -295,7 +318,8 @@ export default {
     clickEvent (menu) {
       let _this = this
       if (menu.action) {
-        _this.beforeClickEventAction(menu.action, _this.selected[0])
+        _this.currSelected = _this.selected[0]
+        _this.beforeClickEventAction(menu.action, _this.selected)
       }
     },
     beforeClickEventAction  (action, data) {
@@ -313,7 +337,6 @@ export default {
     clickEventAction (action, data) {
       let _this = this
       _this.action = action
-      _this.currSelected = data
       let api = '/action'
       if (action.type === 'downfile') {
         api = '/download'
@@ -321,6 +344,9 @@ export default {
         api = '/download'
       } else if (action.type === 'URL') {
         api = '/url'
+      } else if (action.type === 'dataout') {
+        this.export()
+        return
       } else if (action.type === 'refresh') {
         this.clearQuery()
         this.refresh()

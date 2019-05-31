@@ -35,7 +35,7 @@
             :data="tab.tree"
             :props="defaultProps"
             :load="onLazyLoad">
-            <div slot-scope="{ node, data }">
+            <div @dblclick="expandNode(node, data)" slot-scope="{ node, data }">
               <span style="margin-right: 5px"><img style="vertical-align:middle" :src="iconUrl(data)" /></span>
               <span :style="{color: data.color, backgroundColor: data.bgColor}">{{ node.label }}</span>
             </div>
@@ -189,14 +189,18 @@ export default {
           TREEVIEW: _this.tab.treeview,
           TREE: node.data
         }).then((response) => {
-          let rawTree = response.data
-          _this.convertTree(rawTree.tree)
-          _this.currFolder = rawTree.tree
           // 将当前节点下所有子节点清空，并重新添加
           for (let i = node.childNodes.length - 1, j = 0; i >= j; i--) {
             let child = node.childNodes[i]
             _this.$refs.tree.remove(child)
           }
+          let rawTree = response.data
+          if (!(rawTree && rawTree.tree)) {
+            _this.node = undefined
+            return
+          }
+          _this.convertTree(rawTree.tree)
+          _this.currFolder = rawTree.tree
           for (let i = 0, j = _this.currFolder.length; i < j; i++) {
             let item = _this.currFolder[i]
             _this.$refs.tree.append(item, node)
@@ -209,17 +213,31 @@ export default {
           TREEVIEW: _this.tab.treeview
         }).then((response) => {
           let rawTree = response.data
-          _this.convertTree(rawTree.tree)
-          _this.$set(_this.tab, 'tree', rawTree.tree)
-          _this.$set(_this.tab, 'treeview', rawTree.treeview)
+          if (rawTree && rawTree.tree){
+            _this.convertTree(rawTree.tree)
+            _this.$set(_this.tab, 'tree', rawTree.tree)
+            _this.$set(_this.tab, 'treeview', rawTree.treeview)
+          }
         })
+      }
+    },
+    expandNode (node) {
+      console.log(node)
+      if(node.expanded) {
+        node.expanded = false;
+      } else {
+        node.expand()
       }
     },
     onLazyLoad (node, resolve) {
       let _this = this
       if (node.level === 0) {
-        _this.convertTree(this.tab.tree)
-        return resolve(this.tab.tree)
+        if (this.tab.tree) {
+          _this.convertTree(this.tab.tree)
+          return resolve(this.tab.tree)
+        } else {
+          return resolve([])
+        }
       } else if (node.data.children) {
         _this.currFolder = node.data.children
         return resolve(node.data.children)
@@ -229,9 +247,13 @@ export default {
           TREE: node.data
         }).then((response) => {
           let rawTree = response.data
-          _this.convertTree(rawTree.tree)
-          _this.currFolder = rawTree.tree
-          return resolve(rawTree.tree)
+          if (rawTree && rawTree.tree) {
+            _this.convertTree(rawTree.tree)
+            _this.currFolder = rawTree.tree
+            return resolve(rawTree.tree)
+          } else {
+            return resolve([])
+          }
         })
       }
     },

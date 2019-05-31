@@ -1,7 +1,7 @@
 <template>
   <div class="text-left">
     <el-input
-      :type="fieldname=='CN_PSW'?'password':'text'"
+      :type="this.fieldname.toUpperCase().indexOf('CN_PSW') == 0?'password':'text'"
       :value="value"
       :disabled="isReadonly=='True'"
       :readonly="isReadonly=='True'"

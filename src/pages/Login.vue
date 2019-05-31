@@ -4,7 +4,7 @@
     <div class="login-box">
       <el-row type="flex" justify="center">
         <el-col>
-          <div class="title">北京国文琰文化遗产数据管理应用系统</div>
+          <div class="title">文化遗产数据管理应用系统</div>
         </el-col>
       </el-row>
       <el-form @submit.native.prevent ref="form" :rules="rules" :model="form">
@@ -27,6 +27,7 @@
         </el-form-item>
       </el-form>
     </div>
+    <div class="subtitle">北京国文琰信息技术有限公司</div>
   </div>
 </template>
 
@@ -133,5 +134,13 @@ export default {
     padding-bottom: 20px;
     margin-bottom: 20px;
     border-bottom: 1px solid #dedede;
+    text-shadow: 0 0 1px #fff, 0 0 1px #fff, 0 0 1px #fff;
+  }
+  .subtitle {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 18px;
+    text-shadow: 0 0 1px #fff, 0 0 1px #fff, 0 0 1px #fff;
   }
 </style>

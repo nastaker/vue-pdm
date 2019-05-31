@@ -7,6 +7,7 @@
     lazy
     ref="tree"
     node-key="guid"
+    v-if="tab.tree"
     :allow-drop="allowDrop"
     @node-drag-start="handleDragStart"
     @node-drag-end="handleDragEnd"
@@ -70,13 +71,17 @@ export default {
           TREEVIEW: _this.tab.treeview,
           TREE: node.data
         }).then((response) => {
-          let rawTree = response.data
-          _this.convertTree(rawTree.tree)
           // 将当前节点下所有子节点清空，并重新添加
           for (let i = node.childNodes.length - 1, j = 0; i >= j; i--) {
             let child = node.childNodes[i]
             _this.$refs.tree.remove(child)
           }
+          let rawTree = response.data
+          if (!(rawTree && rawTree.tree)) {
+            _this.node = undefined
+            return
+          }
+          _this.convertTree(rawTree.tree)
           for (let i = 0, j = rawTree.tree.length; i < j; i++) {
             let item = rawTree.tree[i]
             _this.$refs.tree.append(item, node)
@@ -89,9 +94,11 @@ export default {
           TREEVIEW: _this.tab.treeview
         }).then((response) => {
           let rawTree = response.data
-          _this.convertTree(rawTree.tree)
-          _this.$set(_this.tab, 'tree', rawTree.tree)
-          _this.$set(_this.tab, 'treeview', rawTree.treeview)
+          if (rawTree && rawTree.tree) {
+            _this.convertTree(rawTree.tree)
+            _this.$set(_this.tab, 'tree', rawTree.tree)
+            _this.$set(_this.tab, 'treeview', rawTree.treeview)
+          }
         })
       }
     },
@@ -108,7 +115,7 @@ export default {
           TREE: node.data
         }).then((response) => {
           let rawTree = response.data
-          if (rawTree.tree && rawTree.tree instanceof Array) {
+          if (rawTree && rawTree.tree && rawTree.tree instanceof Array) {
             _this.convertTree(rawTree.tree)
             return resolve(rawTree.tree)
           }
