@@ -18,7 +18,7 @@
       </el-col>
     </el-row>
     <el-container>
-      <el-aside>
+      <el-aside width="450px">
         <div class="tree" :style="{ height: height + 'px' }">
           <el-tree
             lazy
@@ -47,7 +47,7 @@
         <el-row v-for="row in rowCount" :key="row">
           <template v-for="(col,index) in colCount">
             <el-col v-if="(row-1)*rowCount+col <= fileCount" :key="index" :span="24 / colCount">
-              <div class="file" @contextmenu.prevent="onContextMenu($event, currFolder[(row-1)*rowCount+col-1])">
+              <div class="file" @dblclick="openFolder(currFolder[(row-1)*rowCount+col-1])" @contextmenu.prevent="onContextMenu($event, currFolder[(row-1)*rowCount+col-1])">
                 <img :src="iconUrl(currFolder[(row-1)*rowCount+col-1])" />
                 <div class="file-text">{{currFolder[(row-1)*rowCount+col-1].label}}</div>
               </div>
@@ -62,7 +62,7 @@
           <el-row
             v-for="(row,index) in currFolder"
             :key="index">
-            <div class="row" @contextmenu.prevent="onContextMenu($event, row)">
+            <div class="row" @dblclick="openFolder(row)" @contextmenu.prevent="onContextMenu($event, row)">
               <el-col class="col" :span="colHeaders[0].width">
                 <img style="vertical-align:middle" :src="iconUrl(row)" />
                 {{row.label}}
@@ -87,13 +87,14 @@
 <script>
 export default {
   name: 'Expolrer',
-  props: ['tab', 'page'],
+  props: ['tab', 'page', 'param'],
   data: () => ({
     colCount: 6,
     isIcon: true,
     action: undefined,
     currFolder: [],
     parent: undefined,
+    name: undefined,
     colHeaders: [
       {
         name: '名称',
@@ -139,6 +140,7 @@ export default {
   },
   mounted () {
     let _this = this
+    _this.currFolder = _this.tab.tree
     document.body.addEventListener('click', function() {
       _this.hideContextMenu()
     })
@@ -221,10 +223,14 @@ export default {
         })
       }
     },
+    openFolder (data) {
+      let node = this.$refs.tree.getNode(data.guid)
+      node.expand()
+      this.nodeSelect (null, node)
+    },
     expandNode (node) {
-      console.log(node)
       if(node.expanded) {
-        node.expanded = false;
+        node.expanded = false
       } else {
         node.expand()
       }
@@ -486,7 +492,7 @@ export default {
         //   // 刷新节点
         //   if (typeof _this.node === 'object') {
         //     if (!(_this.node.children instanceof Array)) {
-        //       _this.$set(_this.node, 'children', []);
+        //       _this.$set(_this.node, 'children', [])
         //     }
         //     _this.node.children.push(data.tree)
         //   } else {

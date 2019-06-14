@@ -1,5 +1,10 @@
 <template>
   <div class="container">
+    <el-row>
+      <el-col :span="24">
+        <div class="title">{{name}}</div>
+      </el-col>
+    </el-row>
     <el-tabs v-if="loaded" v-model="activeName" style="height: inherit;">
       <!-- 选项卡 - 注意slot="title" -->
       <el-tab-pane
@@ -23,6 +28,7 @@ export default {
   data: () => ({
     loaded: false,
     activeName: "0",
+    name: undefined,
     page: {},
     formData: {},
     files: []
@@ -32,6 +38,7 @@ export default {
     // 利用localstorage获取保存的参数
     let _this = this
     let param = _this.$store.getters['user/getParam']
+    _this.name = param.OBJ.CN_NAME
     _this.$http.post('/action', param).then((response) => { 
       _this.page = response.data
       _this.loaded = true
@@ -75,6 +82,10 @@ export default {
 </script>
 
 <style scoped>
+  .title {
+    text-align: center;
+    font-size: 1.5em;
+  }
   .container {
     padding:0 10px;
     height:100%;

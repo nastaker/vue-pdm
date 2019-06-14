@@ -9,7 +9,7 @@
         <el-menu-item index="1" @click="toggleDrawer">
           <i style="color:#fff" class="glyphicon glyphicon-th-large" />
         </el-menu-item>
-        <el-menu-item index="2">北京国文琰文化遗产数据管理应用系统</el-menu-item>
+        <el-menu-item index="2">文化遗产数据管理应用系统</el-menu-item>
         <el-menu-item style="float:right" index="0" @click="logout">
           <i style="color:#fff" class="glyphicon glyphicon-log-out" />
         </el-menu-item>
