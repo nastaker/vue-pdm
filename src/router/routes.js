@@ -1,5 +1,8 @@
 const routes = [
   {
+    path: '/helloworld', component: () => import('@/pages/HelloWorld.vue')
+  },
+  {
     path: '/login', component: () => import('@/pages/Login.vue')
   },
   {
@@ -8,9 +11,6 @@ const routes = [
         children: [
           {
             path: '/test', component: () => import('@/components/custom/Explorer.vue')
-          },
-          {
-            path: '/helloworld', component: () => import('@/pages/HelloWorld.vue')
           },
           {
             path: '/listpage/:pageid',

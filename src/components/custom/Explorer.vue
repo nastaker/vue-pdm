@@ -44,12 +44,12 @@
       </el-aside>
       <el-main :style="{ height: height + 'px' }">
         <div v-if="fileCount > 0 && isIcon">
-        <el-row v-for="row in rowCount" :key="row">
-          <template v-for="(col,index) in colCount">
-            <el-col v-if="(row-1)*rowCount+col <= fileCount" :key="index" :span="24 / colCount">
-              <div class="file" @dblclick="openFolder(currFolder[(row-1)*rowCount+col-1])" @contextmenu.prevent="onContextMenu($event, currFolder[(row-1)*rowCount+col-1])">
-                <img :src="iconUrl(currFolder[(row-1)*rowCount+col-1])" />
-                <div class="file-text">{{currFolder[(row-1)*rowCount+col-1].label}}</div>
+        <el-row v-for="(row,rowIndex) in rowCount" :key="rowIndex">
+          <template v-for="(col,colIndex) in colCount">
+            <el-col v-if="rowIndex*colCount+colIndex < fileCount" :key="colIndex" :span="24 / colCount">
+              <div class="file" @dblclick="openFolder(currFolder[rowIndex*colCount+colIndex])" @contextmenu.prevent="onContextMenu($event, currFolder[rowIndex*colCount+colIndex])">
+                <img :src="iconUrl(currFolder[rowIndex*colCount+colIndex])" />
+                <div class="file-text" :title="rowIndex*colCount+colIndex">{{currFolder[rowIndex*colCount+colIndex].label}}</div>
               </div>
             </el-col>
           </template>

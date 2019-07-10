@@ -1,16 +1,8 @@
 <template>
   <div class="text-left">
-    <el-cascader-multi
-      v-if="isMulti=='True' && loaded"
-      @change="change($event)"
-      clearable
-      :width="100"
-      v-model="checkList"
-      :data="items" />
     <el-cascader
-      v-if="isMulti=='False' && loaded"
+      :props="props"
       clearable
-      change-on-select
       style="width:100%"
       v-model="checkList" 
       @change="change($event)" 
@@ -21,10 +13,16 @@
 export default {
   name: 'Cascader',
   props: ['items', 'value', 'isMulti'],
-  data: () => ({
-    checkList: [],
-    loaded: false
-  }),
+  data() {
+    return {
+      checkList: [],
+      props: {
+        emitPath: this.isMulti === 'True' ? false : true,
+        multiple: this.isMulti === 'True' ? true : false
+      },
+      loaded: false
+    }
+  },
   mounted () {
     this.checkList = []
     if (this.value && typeof this.value === 'string') {

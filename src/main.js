@@ -34,6 +34,7 @@ import { Form, FormItem, Button, ButtonGroup, Dropdown, DropdownMenu, DropdownIt
 import { Table, TableColumn, Pagination } from 'element-ui'
 import { Tree } from 'element-ui'
 import { Option, Checkbox, Cascader } from 'element-ui'
+import { Alert } from "element-ui";
 
 Vue.component(Notification.name, Notification)
 Vue.component(Container.name, Container)
@@ -70,7 +71,7 @@ Vue.component(Option.name, Option)
 Vue.component(Checkbox.name, Checkbox)
 Vue.component(Cascader.name, Cascader)
 Vue.component(Upload.name, Upload)
-
+Vue.component(Alert.name, Alert)
 
 Vue.prototype.$notify = Notification
 Vue.prototype.$message = Message
