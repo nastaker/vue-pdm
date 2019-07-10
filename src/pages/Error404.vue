@@ -10,7 +10,7 @@
     <p class="text-faded">Sorry, nothing here...<strong>(404)</strong></p>
     <el-button
       style="width:200px;"
-      @click="$router.push('/')"
+      @click="$router.go(-1)"
     >Go back</el-button>
     </el-col>
   </el-row>

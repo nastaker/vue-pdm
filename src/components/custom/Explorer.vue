@@ -46,10 +46,10 @@
         <div v-if="fileCount > 0 && isIcon">
         <el-row v-for="row in rowCount" :key="row">
           <template v-for="(col,index) in colCount">
-            <el-col v-if="(row-1)*rowCount+col <= fileCount" :key="index" :span="24 / colCount">
-              <div class="file" @dblclick="openFolder(currFolder[(row-1)*rowCount+col-1])" @contextmenu.prevent="onContextMenu($event, currFolder[(row-1)*rowCount+col-1])">
-                <img :src="iconUrl(currFolder[(row-1)*rowCount+col-1])" />
-                <div class="file-text">{{currFolder[(row-1)*rowCount+col-1].label}}</div>
+            <el-col v-if="row*rowCount+col <= fileCount" :key="index" :span="24 / colCount">
+              <div class="file" @dblclick="openFolder(currFolder[row*rowCount+col-1])" @contextmenu.prevent="onContextMenu($event, currFolder[row*rowCount+col-1])">
+                <img :src="iconUrl(currFolder[row*rowCount+col-1])" />
+                <div class="file-text">{{currFolder[row*rowCount+col-1].label}}</div>
               </div>
             </el-col>
           </template>

@@ -1,11 +1,4 @@
-import axios from 'axios'
-
-export default ({ Vue, router, store, message }) => {
-  let http = axios.create({
-    baseURL: process.env.VUE_APP_API,
-    withCredentials: true
-    // timeout: 3000,
-  })
+export default ({ http, router, store, message }) => {
   // 添加请求拦截器
   http.interceptors.request.use(function (config) {
     let user = store.getters['user/getUser']
@@ -60,6 +53,4 @@ export default ({ Vue, router, store, message }) => {
     })
     return Promise.reject(error)
   })
-
-  Vue.prototype.$http = http
 }

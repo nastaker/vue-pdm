@@ -364,6 +364,25 @@ export default {
         } else {
           _this.$message.error('未选择数据')
         }
+      } else if (action.type === 'yuejuan') {
+        let routeUrl = _this.$router.resolve({
+          path: '/test/mark/' + data.CN_ID
+        });
+        window.open(routeUrl.href, '_blank');
+        return
+      } else if (action.type === 'chakan') {
+        if (data.CN_TYPE === '测稿编绘') {
+          let routeUrl = _this.$router.resolve({
+            path: '/test/view/' + data.CN_ID
+          });
+          window.open(routeUrl.href, '_blank');
+        } else if (data.CN_TYPE === '虚拟测量') {
+          let routeUrl = _this.$router.resolve({
+            path: '/test/view2/' + data.CN_ID
+          });
+          window.open(routeUrl.href, '_blank');
+        }
+        return
       }
       _this.$http.post(api, {
         FORMGUID: _this.page.guid,

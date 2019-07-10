@@ -15,7 +15,11 @@ module.exports = {
     config
     .plugin('copy')
     .use(copyWebpackPlugin, [
-      [{ from: 'src/static', to: 'static' }]
+      [{
+        from: 'src/static',
+        to: 'static',
+        
+      }]
     ])
   }
 }

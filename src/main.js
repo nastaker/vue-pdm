@@ -4,15 +4,14 @@ import App from './App.vue'
 import 'ionicons/dist/css/ionicons.min.css'
 import './static/glyphicon/index.css'
 
-import './plugins/element.js'
-import './plugins/createScript.js'
-import registComp from './plugins/customComp.js'
 import './plugins/date.js'
+import './plugins/customComp.js'
 
 import getAxios from './plugins/axios.js'
 import getStore from './store'
 import getRouter from './router'
 
+import axios from 'axios'
 import Viewer from 'v-viewer'
 import 'viewerjs/dist/viewer.css'
 
@@ -27,13 +26,17 @@ import 'element-ui/lib/theme-chalk/index.css'
 import { Notification, Message, MessageBox } from 'element-ui'
 import { Container, Aside, Header, Main, DatePicker } from 'element-ui'
 import { Row, Col } from 'element-ui'
+import { Card } from 'element-ui'
+import { Alert } from 'element-ui'
 import { Menu, Submenu, MenuItem, MenuItemGroup } from 'element-ui'
 import { Tabs, TabPane } from 'element-ui'
 import { Collapse, CollapseItem } from 'element-ui'
+import { Autocomplete } from 'element-ui'
 import { Form, FormItem, Button, ButtonGroup, Dropdown, DropdownMenu, DropdownItem, Upload, Select, Dialog, Input, Switch } from 'element-ui'
 import { Table, TableColumn, Pagination } from 'element-ui'
-import { Tree } from 'element-ui'
+import { Tree, Transfer } from 'element-ui'
 import { Option, Checkbox, Cascader } from 'element-ui'
+import { Loading } from 'element-ui'
 
 Vue.component(Notification.name, Notification)
 Vue.component(Container.name, Container)
@@ -64,23 +67,36 @@ Vue.component(Table.name, Table)
 Vue.component(TableColumn.name, TableColumn)
 Vue.component(Pagination.name, Pagination)
 Vue.component(Tree.name, Tree)
+Vue.component(Transfer.name, Transfer)
 Vue.component(Dialog.name, Dialog)
 Vue.component(Input.name, Input)
+Vue.component(Autocomplete.name, Autocomplete)
 Vue.component(Option.name, Option)
 Vue.component(Checkbox.name, Checkbox)
 Vue.component(Cascader.name, Cascader)
 Vue.component(Upload.name, Upload)
+Vue.component(Card.name, Card)
+Vue.component(Alert.name, Alert)
 
+
+let http = axios.create({
+  baseURL: process.env.VUE_APP_API,
+  withCredentials: true
+  // timeout: 3000,
+})
 
 Vue.prototype.$notify = Notification
 Vue.prototype.$message = Message
 Vue.prototype.$confirm = MessageBox.confirm
+Vue.prototype.$http = http
+Vue.prototype.$loading = Loading.service
 Vue.config.productionTip = false
 
+
+
 let store = getStore()
-let router = getRouter({store})
-getAxios({Vue, router, store, message: Message })
-registComp({ Vue })
+let router = getRouter({http, store, message: Message})
+getAxios({http, router, store, message: Message })
 
 
 new Vue({

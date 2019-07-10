@@ -4,7 +4,7 @@
     <div class="login-box">
       <el-row type="flex" justify="center">
         <el-col>
-          <div class="title">文化遗产数据管理应用系统</div>
+          <div class="title">虚拟仿真实验系统</div>
         </el-col>
       </el-row>
       <el-form @submit.native.prevent ref="form" :rules="rules" :model="form">
@@ -27,11 +27,12 @@
         </el-form-item>
       </el-form>
     </div>
-    <div class="subtitle">北京国文琰信息技术有限公司</div>
   </div>
 </template>
 
 <script>
+import login from '../libs/login'
+
 export default {
   data: () => ({
     form: {
@@ -54,7 +55,7 @@ export default {
       var d = new Date();
       d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
       var expires = "expires=" + d.toUTCString();
-      document.cookie = cname + "=" + cvalue + "; " + expires;
+      document.cookie = cname + "=" + cvalue + "; " + expires + "; path=/";
     },
     submit () {
       let _this = this
@@ -64,22 +65,9 @@ export default {
         // 使每次使用webapi时都携带验证信息
         _this.$http.post('/Authorize', _this.form)
           .then(function (response) {
-            let user = _this.form.username
-            let token = response.data.token
-            let username = response.data.username
-            let rolename = response.data.rolename
-            let avatar = response.data.avatar
-            if (token) {
-              _this.$http.defaults.headers.common['Authorization'] = 'bearer ' + token
-              _this.$store.commit('user/setUser', {
-                user,
-                avatar,
-                username,
-                rolename,
-                token
-              })
-              _this.setCookie('loginguid', response.data.loginguid, 1)
-              _this.$router.push('/')
+            if (response.data.token) {
+              login(_this, response.data)
+              _this.$router.push('/')    
             }
           })
         }
